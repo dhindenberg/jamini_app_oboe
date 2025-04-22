@@ -118,13 +118,13 @@ class SynthManager(private val context: Context) {
      * @param   note      The note to be played.
      * @param   velocity  The velocity of the note to be played.
      */
-    private external fun fluidsynthNoteOn(note: Int, velocity: Int)
+    external fun fluidsynthNoteOn(note: Int, velocity: Int)
     /*
      * @brief   Import of the native implementation of SynthManager.fluidsynthNoteOff() method.
      * @details Stops the playing note.
      * @param   note The note to be stopped.
      */
-    private external fun fluidsynthNoteOff(note: Int)
+    external fun fluidsynthNoteOff(note: Int)
     /*
      * @brief   Import of the native implementation of SynthManager.fluidsynthCC() method.
      * @details Sends a control command via MIDI.

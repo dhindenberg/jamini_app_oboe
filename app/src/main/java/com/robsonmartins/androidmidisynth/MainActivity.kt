@@ -30,6 +30,8 @@
 
 package com.robsonmartins.androidmidisynth
 
+import kotlinx.coroutines.*
+import kotlin.random.Random
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.ScrollView
@@ -65,6 +67,9 @@ class MainActivity : AppCompatActivity() {
         /** @brief Initialize: Load the Native Library. */
         init { System.loadLibrary("synth-lib") }
     }
+
+    /** Coroutine Job für das automatische Abspielen */
+    private var playNotesJob: Job? = null
 
     /* @brief View Model instance. */
     private val viewModel: MainViewModel by viewModels()
@@ -106,6 +111,8 @@ class MainActivity : AppCompatActivity() {
         synthManager.setVolume(127)
         midiManager = MidiManager(this, ::onMidiMessageReceived)
         midiManager.start()
+
+        startPlayingRandomNotes()
     }
 
     /** @brief On destroy event. */
@@ -123,6 +130,20 @@ class MainActivity : AppCompatActivity() {
         // messages are received on some other thread, so switch to the UI thread
         // before attempting to access the UI
         runOnUiThread { txtLog.append(message + "\n") }
+    }
+
+    /** Startet das periodische Abspielen zufälliger MIDI-Noten */
+    private fun startPlayingRandomNotes() {
+        playNotesJob = CoroutineScope(Dispatchers.Default).launch {
+            while (isActive) {
+                val note = Random.nextInt(30, 61)
+                val velocity = 100
+                synthManager.fluidsynthNoteOn(note, 127)
+                delay(1500) // spiele Note 250ms
+                synthManager.fluidsynthNoteOff(note)
+                delay(250) // warte bis zur nächsten Note
+            }
+        }
     }
 
 }
