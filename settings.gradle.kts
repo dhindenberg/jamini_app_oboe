@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "oboe_test"
+rootProject.name = "android-midi-synth"
 include(":app")
  

@@ -1,32 +1,19 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.jetbrains.kotlin.android)
 }
 
 android {
-    namespace = "com.dhitsolutions.oboe_test"
-    compileSdk = 35
+    namespace = "com.robsonmartins.androidmidisynth"
+    compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.dhitsolutions.oboe_test"
-        minSdk = 24
-        targetSdk = 35
+        applicationId = "com.robsonmartins.androidmidisynth"
+        minSdk = 33
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // Native Support
-        externalNativeBuild {
-            cmake {
-                cppFlags += ""
-                arguments += listOf("-DANDROID_STL=c++_shared")
-            }
-        }
-
-        // Wichtig: ABI-Filter setzen
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a") // je nach Bedarf
-        }
     }
 
     buildTypes {
@@ -38,37 +25,22 @@ android {
             )
         }
     }
-
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
-
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "1.8"
     }
-
-    buildFeatures {
-        prefab = true
-    }
-
-    // Wichtig: native Build-Tool konfigurieren
+    ndkVersion = "27.0.11902837 rc2"
     externalNativeBuild {
         cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-        }
-    }
-
-    // Optional: Für saubere Logs/Tests
-    packaging {
-        jniLibs {
-            useLegacyPackaging = false
+            path("src/main/cpp/CMakeLists.txt")
         }
     }
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
@@ -76,5 +48,4 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    implementation("com.google.oboe:oboe:1.9.3")
 }
