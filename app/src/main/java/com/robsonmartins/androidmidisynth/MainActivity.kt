@@ -29,38 +29,11 @@
 // -----------------------------------------------------------------------------------------------
 
 package com.robsonmartins.androidmidisynth
-
 import kotlinx.coroutines.*
 import kotlin.random.Random
 import android.os.Bundle
-import android.view.WindowManager
-import android.widget.ScrollView
-import android.widget.TextView
-import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.widget.addTextChangedListener
-import androidx.lifecycle.ViewModel
 
-// -----------------------------------------------------------------------------------------------
-
-/**
- * @brief MainViewModel class.
- * @details The MainViewModel stores the "View Model" of the Main Activity.
- */
-class MainViewModel : ViewModel() {
-    /** @brief Text content of the main component. */
-    var textContent: String = ""
-}
-
-// -----------------------------------------------------------------------------------------------
-
-/**
- * @brief MainActivity class.
- * @details The MainActivity encapsulates a main activity of the application.
- */
 class MainActivity : AppCompatActivity() {
 
     companion object {
@@ -68,80 +41,41 @@ class MainActivity : AppCompatActivity() {
         init { System.loadLibrary("synth-lib") }
     }
 
-    /** Coroutine Job für das automatische Abspielen */
     private var playNotesJob: Job? = null
 
-    /* @brief View Model instance. */
-    private val viewModel: MainViewModel by viewModels()
     /* @brief SynthManager instance. */
     private lateinit var synthManager: SynthManager
-    /* @brief MidiManager instance. */
-    private lateinit var midiManager: MidiManager
-    /* @brief TextView widget. */
-    private lateinit var txtLog: TextView
-    /* @brief ScrollView widget. */
-    private lateinit var scrollView: ScrollView
 
-    /**
-     * @brief On create event.
-     * @param savedInstanceState Saved instance state.
-     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // screen always on
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-        // setup GUI
-        scrollView = findViewById(R.id.scrollView)
-        txtLog = findViewById(R.id.txtLog)
-        txtLog.text = viewModel.textContent
-        txtLog.addTextChangedListener {
-            viewModel.textContent = it.toString()
-            scrollView.post { scrollView.fullScroll(ScrollView.FOCUS_DOWN) }
-        }
-        // setup SynthManager and MidiManager
-        synthManager = SynthManager(this)
-        synthManager.loadSF("KawaiStereoGrand.sf3")
-        synthManager.setVolume(127)
-        midiManager = MidiManager(this, ::onMidiMessageReceived)
-        midiManager.start()
+
+        SoundPlayer.initialize(this)
+        SoundPlayer.loadInstruments()
 
         startPlayingRandomNotes()
     }
 
     /** @brief On destroy event. */
     override fun onDestroy() {
-        midiManager.finalize()
-        synthManager.finalize()
+        SoundPlayer.release()
         super.onDestroy()
     }
 
-    /*
-     * @brief On MIDI message received callback.
-     * @param message Message received.
-     */
-    private fun onMidiMessageReceived(message: String) {
-        // messages are received on some other thread, so switch to the UI thread
-        // before attempting to access the UI
-        runOnUiThread { txtLog.append(message + "\n") }
-    }
 
     /** Startet das periodische Abspielen zufälliger MIDI-Noten */
     private fun startPlayingRandomNotes() {
         playNotesJob = CoroutineScope(Dispatchers.Default).launch {
             while (isActive) {
-                val note = Random.nextInt(30, 61)
-                val velocity = 100
-                synthManager.fluidsynthNoteOn(note, 127)
-                delay(1500) // spiele Note 250ms
-                synthManager.fluidsynthNoteOff(note)
-                delay(250) // warte bis zur nächsten Note
+                var note = Random.nextInt(30, 61)
+                SoundPlayer.playPianoNote(note,127,750);
+                delay(1000) // spiele Note 250ms
+                note = Random.nextInt(30, 61)
+                SoundPlayer.playBassNote(note,127,750);
+                delay(1000) // spiele Note 250ms
+                note = Random.nextInt(30, 61)
+                SoundPlayer.playDrumsNote(note,127,750);
+
             }
         }
     }
