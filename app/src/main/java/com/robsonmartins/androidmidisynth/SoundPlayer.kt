@@ -51,9 +51,9 @@ object SoundPlayer {
             throw IllegalStateException("SoundPlayer must be initialized first. Call initialize(context).")
         }
         CoroutineScope(Dispatchers.Default).launch {
-            synthManagerBass.fluidsynthNoteOn(noteNr, velocity)
+            synthManagerBass.noteOn(noteNr, velocity)
             delay(duration)
-            synthManagerBass.fluidsynthNoteOff(noteNr)
+            synthManagerBass.noteOff(noteNr)
         }
     }
 
@@ -68,9 +68,9 @@ object SoundPlayer {
             throw IllegalStateException("SoundPlayer must be initialized first. Call initialize(context).")
         }
         CoroutineScope(Dispatchers.Default).launch {
-            synthManagerPiano.fluidsynthNoteOn(noteNr, velocity)
+            synthManagerPiano.noteOn(noteNr, velocity)
             delay(duration)
-            synthManagerPiano.fluidsynthNoteOff(noteNr)
+            synthManagerPiano.noteOff(noteNr)
         }
     }
 
@@ -85,9 +85,9 @@ object SoundPlayer {
             throw IllegalStateException("SoundPlayer must be initialized first. Call initialize(context).")
         }
         CoroutineScope(Dispatchers.Default).launch {
-            synthManagerDrums.fluidsynthNoteOn(noteNr, velocity)
+            synthManagerDrums.noteOn(noteNr, velocity)
             delay(duration)
-            synthManagerDrums.fluidsynthNoteOff(noteNr)
+            synthManagerDrums.noteOff(noteNr)
         }
     }
 

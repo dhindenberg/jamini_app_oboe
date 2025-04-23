@@ -62,19 +62,18 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-
     /** Startet das periodische Abspielen zufälliger MIDI-Noten */
     private fun startPlayingRandomNotes() {
         playNotesJob = CoroutineScope(Dispatchers.Default).launch {
             while (isActive) {
                 var note = Random.nextInt(30, 61)
-                SoundPlayer.playPianoNote(note,127,750);
+                SoundPlayer.playPianoNote(note,127,200);
                 delay(1000) // spiele Note 250ms
                 note = Random.nextInt(30, 61)
                 SoundPlayer.playBassNote(note,127,750);
-                delay(1000) // spiele Note 250ms
+                //delay(200) // spiele Note 250ms
                 note = Random.nextInt(30, 61)
-                SoundPlayer.playDrumsNote(note,127,750);
+                SoundPlayer.playDrumsNote(note,127,100);
 
             }
         }

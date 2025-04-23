@@ -1,38 +1,28 @@
 #include <jni.h>
-#include <unistd.h>
-
-#include "MidiSpec.h"
 #include "SynthManager.h"
 
-/* @brief Default sample rate of the FluidSynth, in kHz. */
 static const int kFluidSynthSampleRate = 44100;
-/* @brief Default latency of the FluidSynth, in ms. */
 static const int kFluidSynthLatency = 10;
-
-/* @brief Calculate the buffer size based in latency value (ms). */
 #define LATENCY_TO_BUFFER_SIZE(x) (kFluidSynthSampleRate * (x) / 1000.0)
 
-// -----------------------------------------------------------------------------------------------
-
-SynthManager* SynthManager::instance = nullptr;
-
 SynthManager::SynthManager(): soundfontId(-1) {
-    // setup synthesizer
     settings = new_fluid_settings();
-    if (settings == nullptr) return;
+    if (!settings) return;
     fluid_settings_setint(settings, "synth.cpu-cores", 4);
     fluid_settings_setnum(settings, "synth.gain", 0.6);
     fluid_settings_setstr(settings, "audio.oboe.performance-mode", "LowLatency");
     fluid_settings_setstr(settings, "audio.oboe.sharing-mode", "Exclusive");
     fluid_settings_setnum(settings, "synth.sample-rate", kFluidSynthSampleRate);
     setLatency(kFluidSynthLatency);
+
     synth = new_fluid_synth(settings);
-    if (synth == nullptr) {
+    if (!synth) {
         delete_fluid_settings(settings);
         return;
     }
+
     driver = new_fluid_audio_driver(settings, synth);
-    if (driver == nullptr) {
+    if (!driver) {
         delete_fluid_synth(synth);
         delete_fluid_settings(settings);
         return;
@@ -40,28 +30,14 @@ SynthManager::SynthManager(): soundfontId(-1) {
 }
 
 SynthManager::~SynthManager() {
-    // clean up
     if (synth && soundfontId != -1) fluid_synth_sfunload(synth, soundfontId, 1);
     if (driver) delete_fluid_audio_driver(driver);
     if (synth) delete_fluid_synth(synth);
     if (settings) delete_fluid_settings(settings);
 }
 
-SynthManager* SynthManager::getInstance() {
-    if (!instance) instance = new SynthManager();
-    return instance;
-}
-
-void SynthManager::freeInstance() {
-    if (instance) {
-        delete instance;
-        instance = nullptr;
-    }
-}
-
 bool SynthManager::loadSF(const char *soundfontPath, int program) {
-    if (synth == nullptr) return false;
-    // load soundfont
+    if (!synth) return false;
     int id = fluid_synth_sfload(synth, soundfontPath, 0);
     if (id == FLUID_FAILED) return false;
     fluid_synth_sfont_select(synth, 0, id);
@@ -71,128 +47,69 @@ bool SynthManager::loadSF(const char *soundfontPath, int program) {
 }
 
 void SynthManager::noteOn(int note, int velocity) {
-    if (synth == nullptr) return;
-    fluid_synth_noteon(synth, 0, note, velocity);
+    if (synth) fluid_synth_noteon(synth, 0, note, velocity);
 }
 
 void SynthManager::noteOff(int note) {
-    if (synth == nullptr) return;
-    fluid_synth_noteoff(synth, 0, note);
+    if (synth) fluid_synth_noteoff(synth, 0, note);
 }
 
 void SynthManager::reverb(int level) {
-    if (synth == nullptr) return;
-    fluid_synth_reverb_on(synth, -1, level > 0);
-    fluid_synth_set_reverb_group_level(synth, -1, level / 127.0);
+    if (synth) {
+        fluid_synth_reverb_on(synth, -1, level > 0);
+        fluid_synth_set_reverb_group_level(synth, -1, level / 127.0);
+    }
 }
 
 void SynthManager::sendCC(int controller, int value) {
-    if (synth == nullptr) return;
-    fluid_synth_cc(synth, 0, controller, value);
+    if (synth) fluid_synth_cc(synth, 0, controller, value);
 }
 
-void SynthManager::setLatency(int ms){
-    double bufferSizeInSamples = LATENCY_TO_BUFFER_SIZE(ms);
-    fluid_settings_setnum(settings, "audio.period-size", bufferSizeInSamples);
+void SynthManager::setLatency(int ms) {
+    double bufferSize = LATENCY_TO_BUFFER_SIZE(ms);
+    fluid_settings_setnum(settings, "audio.period-size", bufferSize);
     fluid_settings_setint(settings, "audio.periods", 2);
 }
 
-// -----------------------------------------------------------------------------------------------
-
 extern "C" {
 
-/**
- * @brief   Native implementation of SynthManager.fluidsynthInit() method.
- * @details Initializes the FluidSynth library.
- * @param   env            JNI Env pointer.
- * @param   (unnamed)      SynthManager (Java) object.
- */
-JNIEXPORT void JNICALL
-Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthInit(
-        JNIEnv *env, jobject) {
-    SynthManager::getInstance();
+JNIEXPORT jlong JNICALL
+Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthInit(JNIEnv *, jobject) {
+    return reinterpret_cast<jlong>(new SynthManager());
 }
 
-/**
- * @brief   Native implementation of SynthManager.fluidsynthLoadSF() method.
- * @details Loads a soundfont file.
- * @param   env            JNI Env pointer.
- * @param   (unnamed)      SynthManager (Java) object.
- * @param   jSoundfontPath The soundfont filename full path.
- * @param   program        The number of the program
- */
-JNIEXPORT int JNICALL
-Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthLoadSF(
-        JNIEnv *env, jobject, jstring jSoundfontPath, int program) {
-    // convert Java string to C string
-    const char *soundfontPath = env->GetStringUTFChars(jSoundfontPath, nullptr);
-    return SynthManager::getInstance()->loadSF(soundfontPath, program) ? 0 : -1;
+JNIEXPORT void JNICALL
+Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthFree(JNIEnv *, jobject, jlong handle) {
+    delete reinterpret_cast<SynthManager *>(handle);
 }
 
-/**
- * @brief   Native implementation of SynthManager.fluidsynthFree() method.
- * @details Finalizes the FluidSynth library.
- * @param   env            JNI Env pointer.
- * @param   (unnamed)      SynthManager (Java) object.
- */
-JNIEXPORT void JNICALL
-Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthFree(
-        JNIEnv *env, jobject) {
-    SynthManager::freeInstance();
+JNIEXPORT jint JNICALL
+Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthLoadSF(JNIEnv *env, jobject, jlong handle, jstring jPath, jint program) {
+    const char *path = env->GetStringUTFChars(jPath, nullptr);
+    auto *synth = reinterpret_cast<SynthManager *>(handle);
+    bool result = synth->loadSF(path, program);
+    env->ReleaseStringUTFChars(jPath, path);
+    return result ? 0 : -1;
 }
 
-/**
- * @brief   Native implementation of SynthManager.fluidsynthNoteOn() method.
- * @details Plays the note.
- * @param   env            JNI Env pointer.
- * @param   (unnamed)      SynthManager (Java) object.
- * @param   note           The note to be played.
- * @param   velocity       The velocity of the note to be played.
- */
 JNIEXPORT void JNICALL
-Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthNoteOn(
-        JNIEnv *env, jobject, int note, int velocity) {
-    SynthManager::getInstance()->noteOn(note, velocity);
+Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthNoteOn(JNIEnv *, jobject, jlong handle, jint note, jint velocity) {
+    reinterpret_cast<SynthManager *>(handle)->noteOn(note, velocity);
 }
 
-/**
- * @brief   Native implementation of SynthManager.fluidsynthNoteOff() method.
- * @details Stops the playing note.
- * @param   env            JNI Env pointer.
- * @param   (unnamed)      SynthManager (Java) object.
- * @param   note           The note to be stopped.
- */
 JNIEXPORT void JNICALL
-Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthNoteOff(
-        JNIEnv *env, jobject, int note) {
-    SynthManager::getInstance()->noteOff(note);
+Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthNoteOff(JNIEnv *, jobject, jlong handle, jint note) {
+    reinterpret_cast<SynthManager *>(handle)->noteOff(note);
 }
 
-/**
- * @brief   Native implementation of SynthManager.fluidsynthCC() method.
- * @details Sends a control command via MIDI.
- * @param   env            JNI Env pointer.
- * @param   (unnamed)      SynthManager (Java) object.
- * @param   controller     Number of the controller.
- * @param   value          Value to send.
- */
 JNIEXPORT void JNICALL
-Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthCC(
-        JNIEnv *env, jobject, int controller, int value) {
-    SynthManager::getInstance()->sendCC(controller, value);
+Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthCC(JNIEnv *, jobject, jlong handle, jint controller, jint value) {
+    reinterpret_cast<SynthManager *>(handle)->sendCC(controller, value);
 }
 
-/**
- * @brief   Native implementation of SynthManager.fluidsynthReverb() method.
- * @details Sets the reverb level.
- * @param   env            JNI Env pointer.
- * @param   (unnamed)      SynthManager (Java) object.
- * @param   level          The reverb level (0 to 127).
- */
 JNIEXPORT void JNICALL
-Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthReverb(
-        JNIEnv *env, jobject, int level) {
-    SynthManager::getInstance()->reverb(level);
+Java_com_robsonmartins_androidmidisynth_SynthManager_fluidsynthReverb(JNIEnv *, jobject, jlong handle, jint level) {
+    reinterpret_cast<SynthManager *>(handle)->reverb(level);
 }
 
 } // extern "C"
