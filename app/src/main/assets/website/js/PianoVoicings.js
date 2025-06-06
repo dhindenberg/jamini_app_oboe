@@ -1,0 +1,140 @@
+class PianoVoicings {
+
+	getVoicing(gTon,extension){
+	
+        extension = extension.replace(/\(.*?\)/g, '');
+        extension = extension.split('/')[0];
+
+        const transform = {
+            '': 'maj7',
+            'm': 'm7',
+			'13': '6',
+			'9': '7',
+            '69': '6',
+            '7#5': '7',
+			'maj7#5':'maj7',
+			'maj7#11':'maj7',
+            '7#11': '7',
+            '7#9': '7',
+            '7b13': '7',
+            '7b9': '7',
+            '07': 'dim',
+            '0': 'dim',	
+			'7alt':'7'
+        };
+
+		let def = {
+			'7sus': [[0, 5, 7, 10], [7, 10, 0, 5]],
+			'm6': [[3, 7, 9, 14], [9, 14, 3, 7]],
+			'm7': [[3, 7, 10, 14], [10, 14, 3, 7]],
+			'm7b5': [[0, 3, 6, 10], [6, 10, 0, 3]],
+			'dim': [[0, 3, 6, 9], [6, 9, 0, 3]],
+			'7': [[4, 7, 10, 14], [10, 14, 4, 7]],
+			'6': [[4, 7, 9, 14], [9, 14, 4, 7]],
+			'maj7': [[4, 7, 11, 14], [11, 14, 4, 7]]
+		};
+
+		/*
+		def = {
+			"m7": [[3, 8, 13, 18, 22], [10, 15, 20, 25, 30]],
+			"m7b5": [[6, 9, 15, 20, 25], [9, 15, 20, 25, 30]],
+			"7": [[7, 13, 17, 22, 27], [13, 19, 24, 29, 34]],
+			"alt": [[7, 13, 18, 23, 27], [13, 19, 23, 27, 30]],
+			"dim": [[6, 12, 17, 21, 27]],
+			"maj7": [[7, 12, 17, 22, 26], [14, 19, 24, 29, 34]]
+		};
+		*/
+
+        if (!def.hasOwnProperty(extension)) {
+			console.error('Unbekannte Akkordextension:', extension);
+            return [];
+        }
+        
+		let voicings = def[extension];  
+		//console.error("gTon",gTon);
+		//let updatedVoicings = voicings.map(voicing => voicing.map(note => note + gTon + 3));
+		//return updatedVoicings[0];
+		//return [gTon];
+
+		voicings = this.normalizeVoicings(voicings);	
+		//voicings = this.calcDrop2or3(voicings);
+		
+		let potentialVoicings = this.generatePotentialVoicings(voicings,gTon);
+		//return 
+		const nearestVocing = this.findClosestArray(potentialVoicings);
+		return nearestVocing;
+	
+	}
+
+	calcDrop2or3(arrays){
+		return arrays.map(arr => {
+			return arr.map((value, index) => {				
+				if (index === this.getRandomInt(1,2)) {
+					return value - 12; // Verringere den Wert um 12
+				}
+				return value; // Belasse den Wert unverändert
+			});
+		});
+	}
+
+    normalizeVoicings(voicings) {
+		//zum berechnen der umkehrungen, nur behelf damit die nonten einfach verdreht werden können
+        return voicings.map(voicing => {
+            let adjusted = [...voicing]; // Kopie des Arrays
+            let changed = true;
+            
+            while (changed) {
+                changed = false;
+                for (let i = 1; i < adjusted.length; i++) {
+                    if (adjusted[i] < adjusted[i - 1]) {
+                        adjusted[i] += 12;
+                        changed = true; // Wiederholen, falls Änderungen gemacht wurden
+                    }
+                }
+            }
+            
+            return adjusted;
+        });
+    }
+
+    generatePotentialVoicings(voicings,gTon) {
+        let updatedVoicings = voicings.map(voicing => voicing.map(note => note + gTon));
+        let potentialVoicings = [];
+        for (let i = -48; i <= 12; i+=12) {
+            updatedVoicings.forEach(notes => {
+                potentialVoicings.push(notes.map(note => note + i));
+            });
+		}
+        return potentialVoicings;
+    }
+	
+	findClosestArray(arrays, target = 56) {
+		// Initialisiere eine Variable für das kleinste Abstand und das beste Array
+		let minDistance = Infinity;
+		let closestArray = null;
+		
+		// Gehe jedes Array durch
+		arrays.forEach(arr => {
+			const firstValue = arr[0]; // Der erste Wert im Array
+			
+			// Berechne den Abstand zum Zielwert (70)
+			if (firstValue > target) {
+				const distance = Math.abs(firstValue - target);
+				
+				// Wenn der Abstand kleiner ist als der bisher kleinste, aktualisiere das Resultat
+				if (distance < minDistance) {
+					minDistance = distance;
+					closestArray = arr;
+				}
+			}
+		});
+		
+		return closestArray;
+	}
+
+	getRandomInt(from, to) {
+		return Math.floor(Math.random() * (to - from + 1)) + from;
+	}
+	
+	
+}

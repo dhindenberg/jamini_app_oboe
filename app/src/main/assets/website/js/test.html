@@ -1,0 +1,33 @@
+<script>
+
+function adjustNumbersToRange(arr, min = 60, max = 90) {
+    let n = arr.length;
+    let step = (max - min) / (n - 1); // Gleichmäßiger Abstand berechnen
+
+    let targetValues = arr.map((_, i) => Math.round(min + i * step)); // Zielwerte berechnen
+
+    let adjustedNumbers = arr.map((num, i) => {
+        let target = targetValues[i];
+
+        // Suche die nächstgelegene Zahl im 12er-Schritt-Raster
+        let closest = Math.round((target - num) / 12) * 12 + num;
+
+        // Begrenzen auf min/max
+        if (closest < min) closest = min;
+        if (closest > max) closest = max;
+
+        return closest;
+    });
+
+    return adjustedNumbers;
+}
+
+// Beispielaufruf
+let inputArray = [5, 55, 70, 80, 95];  // Beispielwerte
+console.error(inputArray);
+let result = adjustNumbersToRange(inputArray);
+console.error(result);
+
+</script>
+
+

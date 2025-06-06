@@ -1,82 +1,65 @@
-/*
- * Copyright (c) 2024 Robson Martins
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
-*/
-// -----------------------------------------------------------------------------------------------
-/**
- * @file MainActivity.kt
- * @brief Kotlin Implementation of MainActivity.
- *
- * @author Robson Martins (https://www.robsonmartins.com)
- */
-// -----------------------------------------------------------------------------------------------
-
 package com.robsonmartins.androidmidisynth
-import kotlinx.coroutines.*
-import kotlin.random.Random
+
 import android.os.Bundle
+import android.util.Log
+import android.view.View
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
-    companion object {
-        /** @brief Initialize: Load the Native Library. */
-        init { System.loadLibrary("synth-lib") }
-    }
-
-    private var playNotesJob: Job? = null
-
-    /* @brief SynthManager instance. */
-    private lateinit var synthManager: SynthManager
+    lateinit var webView: WebView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Vollbildmodus aktivieren
+        window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_FULLSCREEN or
+                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                )
+
+        supportActionBar?.hide()
         setContentView(R.layout.activity_main)
 
-        SoundPlayer.initialize(this)
-        SoundPlayer.loadInstruments()
+        webView = findViewById(R.id.webview)
 
-        startPlayingRandomNotes()
-    }
+        // WebView konfigurieren
+        val settings: WebSettings = webView.settings
+        settings.javaScriptEnabled = true
+        settings.allowFileAccess = true
+        settings.allowContentAccess = true
 
-    /** @brief On destroy event. */
-    override fun onDestroy() {
-        SoundPlayer.release()
-        super.onDestroy()
-    }
-
-    /** Startet das periodische Abspielen zufälliger MIDI-Noten */
-    private fun startPlayingRandomNotes() {
-        playNotesJob = CoroutineScope(Dispatchers.Default).launch {
-            while (isActive) {
-                var note = Random.nextInt(30, 61)
-                SoundPlayer.playPianoNote(note,127,200);
-                delay(1000) // spiele Note 250ms
-                note = Random.nextInt(30, 61)
-                SoundPlayer.playBassNote(note,127,750);
-                //delay(200) // spiele Note 250ms
-                note = Random.nextInt(30, 61)
-                SoundPlayer.playDrumsNote(note,127,100);
-
+        // JS-Fehler und console.log() in Logcat ausgeben
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                consoleMessage?.let {
+                    Log.d(
+                        "WebViewConsole",
+                        "${it.message()} -- From line ${it.lineNumber()} of ${it.sourceId()}"
+                    )
+                }
+                return true
             }
         }
+
+        // Interne Navigation verhindern das Öffnen von externen Browsern
+        webView.webViewClient = WebViewClient()
+
+        // Lokale Datei laden
+        webView.loadUrl("file:///android_asset/website/index.html")
     }
 
+    override fun onBackPressed() {
+        if (webView.canGoBack()) {
+            webView.goBack()
+        } else {
+            super.onBackPressed()
+        }
+    }
 }
