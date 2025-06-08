@@ -2,67 +2,41 @@
 <html lang="de">
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Jamini</title>
-	<script src="js/howler.min.js"></script> 	
-	<script src="js/SongParser.js"></script> 	
-	<script src="js/DisplaySong.js"></script> 	
-	<script src="js/gui.js"></script> 	
-	<script src="js/BassLogic.js"></script>
-	<script src="js/BassPlayer.js"></script> 	
-	<script src="js/PianoVoicings.js"></script> 	 
-	<script src="js/PianoLogic.js"></script> 	 	
-	<script src="js/PianoPlayer.js"></script> 	
-	<script src="js/DrumLogic.js"></script> 
-	<script src="js/DrumPlayer.js"></script> 	 	
-	<script src="js/ChordParser.js"></script> 	 	 
-	<link rel="stylesheet" href="css/main.css">
+	<title>MIDI Synth Controller</title>
+	<style>
+		body {
+            font-family: sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 18px;
+            margin: 10px;
+        }
+	</style>
+	<script>
+		function playPiano() {
+            const note = Math.floor(Math.random() * 30) + 30;
+            SoundInterface.playPiano(note, 127, 500);
+        }
+
+        function playBass() {
+            const note = Math.floor(Math.random() * 30) + 30;
+            SoundInterface.playBass(note, 100, 700);
+        }
+
+        function playDrum() {
+            const note = Math.floor(Math.random() * 30) + 30;
+            SoundInterface.playDrum(note, 127, 200);
+        }
+	</script>
 </head>
 <body>
-	
-	<div id="beatSelectContainer"></div>
-	
-	<input type="button" value="play" onclick="play();">
-	<input type="button" value="stop" onclick="stop();">
-	<select id="loopSelect">
-		<option value="1">1</option>
-		<option value="2">2</option>
-		<option value="3">3</option>
-		<option value="4" selected>4</option>
-		<option value="5">5</option>
-		<option value="6">6</option>
-		<option value="7">7</option>
-		<option value="8">8</option>
-	</select>
+<h1>MIDI Synth Controller</h1>
 
-
-<label>
-	<input type="checkbox" id="mutePiano" checked> Mute Piano
-</label>
-<label>
-	<input type="checkbox" id="muteBass"> Mute Bass
-</label>
-<label>
-	<input type="checkbox" id="muteDrums" checked> Mute Drums
-</label>
-
-
-
-<br>
-<div id="bpmControl">
-<input id="bpmSlider" type="range" min="50" max="230" value="85" step="1" oninput="updateBPM(this.value)"/>
-	<label for="bpmSlider"><span id="bpmValue">85</span></label> 	
-</div>
-
-	<div id="trackName"></div>
-	<div id="chordWrapper"></div>
-
-	<input type="text" id="songSearchTxt" placeholder="Song suchen...">
-	<div id="songSearchResults"></div> <div id="songChooser"></div>
-	<div id="songChooserSongs"></div>
-
-	<script src="js/Songs.js"></script>
-	<script src="js/Beats.js"></script> 
-	<script src="js/app.js"></script> 	 	
+<button onclick="playPiano()">🎹 Piano spielen</button>
+<button onclick="playBass()">🎸 Bass spielen</button>
+<button onclick="playDrum()">🥁 Drums spielen</button>
 </body>
 </html>

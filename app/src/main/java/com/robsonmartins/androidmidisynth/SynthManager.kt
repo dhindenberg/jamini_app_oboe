@@ -6,11 +6,20 @@ import java.io.IOException
 
 class SynthManager(private val context: Context) {
 
+    companion object {
+        init {
+            System.loadLibrary("synth-lib") // Native Lib wird genau einmal pro Prozess geladen
+        }
+    }
+
     private var soundFontPath: String? = null
     private var nativeHandle: Long = 0
 
     init {
         nativeHandle = fluidsynthInit()
+        if (nativeHandle == 0L) {
+            throw RuntimeException("Failed to initialize FluidSynth native handle")
+        }
     }
 
     fun finalize() {
@@ -32,12 +41,10 @@ class SynthManager(private val context: Context) {
         fluidsynthCC(nativeHandle, 7, volume)
     }
 
-    // Wrapper-Methode für NoteOn
     fun noteOn(note: Int, velocity: Int) {
         fluidsynthNoteOn(nativeHandle, note, velocity)
     }
 
-    // Wrapper-Methode für NoteOff
     fun noteOff(note: Int) {
         fluidsynthNoteOff(nativeHandle, note)
     }

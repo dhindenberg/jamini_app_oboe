@@ -12,6 +12,11 @@ import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        /** @brief Initialize: Load the Native Library. */
+        init { System.loadLibrary("synth-lib") }
+    }
+
     lateinit var webView: WebView
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,6 +33,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         webView = findViewById(R.id.webview)
+
+        // ✅ SoundPlayer initialisieren – ganz wichtig
+        SoundPlayer.initialize(this)
+        SoundPlayer.loadInstruments()
 
         // WebView konfigurieren
         val settings: WebSettings = webView.settings
@@ -48,8 +57,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Interne Navigation verhindern das Öffnen von externen Browsern
+        // Interne Navigation innerhalb der WebView verhindern Öffnen im externen Browser
         webView.webViewClient = WebViewClient()
+
+        // ✅ SoundInterface hinzufügen – nach SoundPlayer-Initialisierung
+        webView.addJavascriptInterface(SoundInterface(), "SoundInterface")
 
         // Lokale Datei laden
         webView.loadUrl("file:///android_asset/website/index.html")

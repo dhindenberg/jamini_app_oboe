@@ -8,23 +8,29 @@ class Songs {
 	 * LÃ¤dt die JSON-Datei mit den Song-Daten und speichert sie in this.songs.
 	 * @returns {Promise<void>} - Eine Promise, die aufgelÃ¶st wird, wenn die Songs geladen sind.
 	 */
-	async loadSongs() {
-		try {
-			const response = await fetch(this.jsonUrl);
-			this.songs = await response.json();
-			//füge index hinzu
-			this.songs.forEach((song, index) => {
-				this.songs[index]["id"] = index;
-			});
-			console.log(`Geladene Songs: ${this.songs.length}`);
+    async loadSongs() {
+        try {
+            const request = new XMLHttpRequest();
+            request.overrideMimeType("application/json");
+            request.open("GET", "website/jaminiSongs.json", true);
+            request.onload = () => {
+                if (request.status === 200 || request.status === 0) {
+                    this.songs = JSON.parse(request.responseText);
+                    this.songs.forEach((song, index) => {
+                        this.songs[index]["id"] = index;
+                    });
+                    this.createSongCharOverview();
+                    this.setupSearchListener();
+                } else {
+                    console.error("Fehler beim Laden: " + request.status);
+                }
+            };
+            request.send(null);
+        } catch (error) {
+            console.error("Fehler beim Laden der Songs:", error);
+        }
+    }
 
-			// Initialanzeige der Songs mit der alten Logik
-			this.createSongCharOverview();
-			this.setupSearchListener(); // Such-Listener einrichten
-		} catch (error) {
-			console.error(`Fehler beim Laden der Song-Datei: ${this.jsonUrl}`, error);
-		}
-	}
 
 	createSongCharOverview() {
 		let songnames = [];
